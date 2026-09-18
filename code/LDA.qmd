@@ -1,0 +1,266 @@
+---
+title: "LDA"
+format: html
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+library(textstem)
+library(tidytext)
+library(tm)
+library(topicmodels)
+library(ggplot2)
+```
+
+```{r}
+#| echo: false
+#| output: false
+data <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_combined.csv")
+```
+
+```{r}
+# filter to just dataset 1 - 12 and remove NAs
+data <- data |>
+  filter(grepl("data-set-", file_origin)) |>
+  filter(!is.na(text))
+```
+
+```{r}
+# extract 1 - 12 as number
+data <- data |>
+  mutate(dataset = str_match(file_origin, r"(data-set-(\d{1,2})-files)")[, 2] |> as.integer())
+```
+
+```{r}
+# convert to bigrams, remove numbers, remove 
+
+alpha_only_pattern <- r"(^[a-z]+$)"  # kills numbers, punctuation, mixed tokens
+
+process_bigram_batch <- function(batch) {
+  batch |>
+    unnest_tokens(bigram, text, token = "ngrams", n = 2) |>
+    separate(bigram, into = c("word1", "word2"), sep = " ") |>
+    mutate(
+      word1 = lemmatize_words(word1),
+      word2 = lemmatize_words(word2)
+    ) |>
+    filter(
+      str_detect(word1, alpha_only_pattern),
+      str_detect(word2, alpha_only_pattern),
+      !word1 %in% stop_words$word,
+      !word2 %in% stop_words$word
+    ) |>
+    unite(bigram, word1, word2, sep = " ") |>
+    count(file_name, bigram, name = "n")
+}
+
+# splits row indices into groups so that each group's total nchar stays
+# under char_budget. a single row longer than char_budget gets its own
+# solo batch rather than being dropped or blowing the budget for its group.
+make_char_batches <- function(char_counts, char_budget) {
+  batch_id <- integer(length(char_counts))
+  current_batch <- 1L
+  running_total <- 0L
+  
+  for (i in seq_along(char_counts)) {
+    this_len <- char_counts[i]
+    if (running_total > 0 && running_total + this_len > char_budget) {
+      current_batch <- current_batch + 1L
+      running_total <- 0L
+    }
+    batch_id[i] <- current_batch
+    running_total <- running_total + this_len
+  }
+  
+  batch_id
+}
+
+clean_dataset_bigrams <- function(ds_num, data, char_budget = 5e6) {
+  out_file <- file.path(
+    "/Volumes/Thesis/Epstein_Files/output/dtm_prep",
+    paste0("dataset_", ds_num, "_bigram_counts.rds")
+  )
+  if (file.exists(out_file)) {
+    message("  [SKIP] dataset ", ds_num, " already processed")
+    return(invisible(NULL))
+  }
+  
+  chunk <- data |> filter(dataset == ds_num)
+  chunk$char_len <- nchar(chunk$text)
+  chunk$batch_id <- make_char_batches(chunk$char_len, char_budget)
+  
+  n_batches <- max(chunk$batch_id)
+  message("  [BATCHING] dataset ", ds_num, ": ", nrow(chunk), " rows, ",
+          "char_budget = ", format(char_budget, scientific = FALSE),
+          ", ", n_batches, " batches")
+  
+  batch_results <- vector("list", n_batches)
+  
+  for (b in seq_len(n_batches)) {
+    batch <- chunk[chunk$batch_id == b, ]
+    batch_results[[b]] <- process_bigram_batch(batch)
+    
+    rm(batch); gc()
+    if (b %% 10 == 0) message("    batch ", b, "/", n_batches, " done")
+  }
+  
+  bigram_counts <- bind_rows(batch_results) |>
+    count(file_name, bigram, wt = n, name = "n")
+  
+  write_rds(bigram_counts, out_file, compress = "gz")
+  rm(chunk, batch_results, bigram_counts); gc()
+  message("  [DONE] dataset ", ds_num)
+}
+
+for (i in 1:12) clean_dataset_bigrams(i, data)
+```
+
+```{r}
+all_bigram_counts <- list.files(
+  "/Volumes/Thesis/Epstein_Files/output/dtm_prep",
+  pattern = "bigram_counts\\.rds$", full.names = TRUE
+) |>
+  map(read_rds) |>
+  bind_rows()
+```
+
+```{r}
+term_doc_freq <- all_bigram_counts |> distinct(file_name, bigram) |> count(bigram, name = "doc_freq")
+
+# inspect the distribution before picking a cutoff
+term_doc_freq |> summarize(
+  n_terms = n(),
+  n_hapax = sum(doc_freq == 1),
+  pct_hapax = mean(doc_freq == 1)
+)
+```
+
+```{r}
+tibble(threshold = c(50, 75, 100, 150, 200)) |>
+  mutate(n_terms_kept = map_int(threshold, ~ sum(term_doc_freq$doc_freq >= .x)))
+```
+
+```{r}
+n_docs <- n_distinct(all_bigram_counts$file_name)
+
+term_doc_freq |>
+  mutate(doc_pct = doc_freq / n_docs) |>
+  arrange(desc(doc_pct)) |>
+  slice_head(n = 20)
+```
+
+```{r}
+keep_terms <- term_doc_freq |>
+  mutate(doc_pct = doc_freq / n_docs) |>
+  filter(doc_freq >= 100, doc_pct <= 0.3) |>  # adjust upper bound based on what you see
+  pull(bigram)
+
+length(keep_terms)
+```
+
+```{r}
+term_doc_freq |>
+  mutate(doc_pct = doc_freq / n_docs) |>
+  arrange(desc(doc_pct)) |>
+  slice(21:60)
+```
+
+```{r}
+structural_words <- c(
+  # plist/xml artifacts
+  "xml", "plist", "dtd", "dtds", "doctype", "propertylist", "dict", "key", "array",
+  "integer", "string", "flag", "apple", "public",
+  # email header/timestamp artifacts
+  "date", "mon", "tue", "wed", "thu", "fri", "sat", "sun", "sit", "send",
+  "monday", "tuesday", "wednesday", "thursday", "friday", "subject", "begin",
+  "forward", "conversation", "pm", "am", "gmail", "remote", "id", "receive",
+  "view", "write", "original", "message", "encode", "utf",
+  # disclaimer boilerplate (second half)
+  "confidential", "pursuant", "intend", "recipient"
+)
+
+boilerplate_bigrams <- c(
+  "strictly prohibit", "copy thereof", "attorney client", "client privilege",
+  "inside information", "constitute inside", "thereof include",
+  "attachment copyright", "epstein unauthorized", "jee unauthorized",
+  "treatment request", "confidential treatment"
+)
+
+keep_terms <- term_doc_freq |>
+  filter(doc_freq >= 100) |>
+  filter(nchar(bigram) <= 25) |>   # drops run-together/repeated-char garbage
+  filter(!str_detect(bigram, paste0("\\b(", paste(structural_words, collapse = "|"), ")\\b"))) |>
+  filter(!bigram %in% boilerplate_bigrams) |>
+  pull(bigram)
+
+length(keep_terms)
+```
+
+```{r}
+dtm <- all_bigram_counts |>
+  filter(bigram %in% keep_terms) |>
+  cast_dtm(document = file_name, term = bigram, value = n)
+
+dtm
+```
+
+Trial Run
+
+```{r}
+set.seed(1)
+sample_files <- all_bigram_counts |>
+  distinct(file_name) |>
+  filter(file_name %in% dtm$dimnames$Docs) |>
+  slice_sample(prop = 0.05) |>
+  pull(file_name)
+
+dtm_sample <- all_bigram_counts |>
+  filter(bigram %in% keep_terms, file_name %in% sample_files) |>
+  cast_dtm(document = file_name, term = bigram, value = n)
+
+dtm_sample
+
+library(topicmodels)
+
+lda_sample <- LDA(dtm_sample, k = 12, method = "VEM", control = list(seed = 1234))
+terms(lda_sample, 10)
+```
+
+```{r}
+lda_model <- LDA(dtm, k = 12, method = "VEM", control = list(seed = 1234))
+write_rds(lda_model, "/Volumes/Thesis/Epstein_Files/output/lda_model_k12.rds")
+```
+
+```{r}
+chapter_topics <- tidy(lda_model)
+chapter_topics
+```
+
+```{r}
+top_terms <- chapter_topics |>
+  group_by(topic) |>
+  slice_max(beta, n = 5) |> 
+  ungroup() |>
+  arrange(topic, desc(beta))
+
+top_terms
+```
+
+```{r}
+for (t in sort(unique(top_terms$topic))) {
+  p <- top_terms |>
+    filter(topic == t) |>
+    ggplot(aes(beta, fct_reorder(term, beta))) +
+    geom_col(fill = "steelblue", show.legend = FALSE) +
+    labs(x = "beta", y = NULL, title = paste0("Topic ", t))
+  
+  print(p)
+  
+  ggsave(
+    filename = file.path("/Volumes/Thesis/plots", paste0("topic_", t, ".png")),
+    plot = p,
+    width = 8, height = 5, dpi = 300
+  )
+}
+```

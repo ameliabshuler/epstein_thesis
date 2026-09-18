@@ -1,0 +1,1365 @@
+---
+title: "Exploratory Data Analysis"
+format: html
+editor: visual
+---
+
+```{r}
+#| echo: false
+#| output: false
+library(tidyverse)
+library(patchwork)
+library(cowplot)
+```
+
+```{r}
+#| echo: false
+#| output: false
+data <- read_csv("/Volumes/Thesis/Epstein_Files/output/doc_type_combined.csv")
+data_e <- read_csv("/Volumes/Thesis/Epstein_Files/output/email_text_clean.csv")
+data_f <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_combined.csv")
+```
+
+## Total number of files
+
+```{r}
+nrow(data)
+```
+
+## Total number of pages
+
+```{r}
+sum(data$file_length, na.rm = TRUE)
+```
+
+```{r}
+#| echo: false
+data <- data |>
+  mutate(
+    file_type = fct_relevel(file_type,
+                            "audio",
+                            "corrupt",
+                            "email",
+                            "other",
+                            "photo",
+                            "video")
+  )
+```
+
+## Total number of files by type
+
+```{r}
+#| echo: false
+files_by_type <- ggplot(data = data,
+       aes(
+         x = file_type,
+         fill = file_type
+       )) +
+  scale_fill_manual(values = c(
+    audio = "#F35E5A",
+    corrupt = "#A89005",
+    email = "#17B12B",
+    other = "#17B3B7",
+    photo = "#5086FF",
+    video = "#EF43DC"),
+    drop = FALSE
+  ) +
+  geom_bar() +
+  geom_text(aes(label = after_stat(count)), 
+            stat = "count",
+            size = 6,
+            size.unit = "pt",
+            vjust = -0.3) +
+  scale_y_sqrt() +
+  theme_void() +
+  theme(
+    plot.margin = margin(r = 10, l = 10, b = 10),
+    axis.title.y = element_blank(), # remove label
+    axis.text.y = element_blank(), # remove number
+    axis.ticks.y = element_blank(), # remove ticks
+    axis.line.y = element_blank(), # remove line (blank here)
+    axis.text.x = element_text(), # restore x tick labels
+    axis.title.x = element_blank(), # restore x axis title
+    legend.position = "none",
+    plot.background = element_rect(fill = "white", color = NA)
+        ) + 
+  labs(title = "Total number of files by type")
+files_by_type
+```
+
+## Total number of types by dataset
+
+### Data
+
+```{r}
+#| echo: false
+data_court <- data |>
+  filter(grepl("court-records-", file_origin)) |>
+  mutate(file_origin = factor(
+    file_origin,
+    levels = str_sort(unique(file_origin), numeric = TRUE)
+  )) |>
+  mutate(file_origin = factor(
+    file_origin,
+    levels = c(
+      'court-records-doe-v-indyke-no-119-cv-08673-sdny-2019',
+      'court-records-doe-v-indyke-no-119-cv-11869-sdny-2019',
+      'court-records-doe-v-indyke-no-120-cv-00484-sdny-2020',
+      'court-records-doe-v-indyke-no-120-cv-02365-sdny-2020',
+      'court-records-doe-17-v-indyke-no-119-cv-09610-sdny-2019',
+      'court-records-doe-1000-v-indyke-no-119-cv-10577-sdny-2019',
+      'court-records-v-indyke-no-119-cv-10474-sdny-2019',
+      'court-records-v-indyke-no-119-cv-10475-sdny-2019',
+      'court-records-v-indyke-no-119-cv-10476-sdny-2019',
+      'court-records-v-indyke-no-119-cv-10479-sdny-2019',
+      'court-records-v-indyke-no-119-cv-10788-sdny-2019',
+      'court-records-doe-v-united-states-no-908-cv-80736-sd-fla-2008',
+      'court-records-united-states-v-noel-no-119-cr-00830-sdny-2019',
+      'court-records-united-states-v-maxwell-no-20-3061-2d-cir-2020',
+      'court-records-united-states-v-maxwell-no-21-0058-2d-cir-2021',
+      'court-records-united-states-v-maxwell-no-21-0770-2d-cir-2021',
+      'court-records-united-states-v-maxwell-no-22-1426-2d-cir-2022',
+      'court-records-united-states-v-maxwell-no-120-cr-00330-sdny-2020',
+      'court-records-united-states-v-maxwell-no-120-mj-00132-dnh-2020',
+      'court-records-v-maxwell-no-115-cv-07433-sdny-2015',
+      'court-records-v-maxwell-no-117-mc-00025-sdny-2016',
+      'court-records-maxwell-v-united-states-no-24-1073-us-2025-petition-cert',
+      'court-records-v-nine-east-71st-street-no-119-cv-07625-sdny-2019',
+      'court-records-ca-florida-holdings-llc-publisher-palm-beach-post-v-aronberg-no-50-2019-ca-014681-xxxx-mb',
+      'court-records-government-united-states-virgin-islands-v-jpmorgan-chase-bank-na-no-122-cv-10904-sdny-2022',
+      'court-records-operating-engineers-construction-industry-and-miscellaneous-pension-fund-v-dimon-no-123-cv-03903',
+      'court-records-re-grand-jury-05-02-wpb-07-103-wpb-no-925-mc-80920-sd-fla-2025',
+      'court-records-doe-no-3-v-epstein-no-908-cv-80232-sd-fla-2008',
+      'court-records-doe-no-4-v-epstein-no-908-cv-80380-sd-fla-2008',
+      'court-records-doe-no-5-v-epstein-no-908-cv-80381-sd-fla-2008',
+      'court-records-doe-no-6-v-epstein-no-908-cv-80994-sd-fla-2008',
+      'court-records-doe-no-8-v-epstein-no-909-cv-80802-sd-fla-2009',
+      'court-records-jane-doe-43-v-epstein-no-117-cv-00616-sdny-2017',
+      'court-records-doe-no-101-v-epstein-no-909-cv-80591-sd-fla-2009',
+      'court-records-doe-no-102-v-epstein-no-909-cv-80656-sd-fla-2009',
+      'court-records-doe-no-103-v-epstein-no-910-cv-80309-sd-fla-2010',
+      'court-records-doe-v-epstein-no-908-cv-80069-sd-fla-2008',
+      'court-records-doe-v-epstein-no-908-cv-80119-sd-fla-2008',
+      'court-records-doe-v-epstein-no-908-cv-80804-sd-fla-2008',
+      'court-records-doe-v-epstein-no-909-v-80469-sd-fla-2009',
+      'court-records-v-epstein-909-cv-81092-sd-fla-2009',
+      'court-records-v-epstein-no-910-cv-80447-sd-fla-2010',
+      'court-records-v-epstein-no-910-cv-81111-sd-fla-2010',
+      'court-records-united-states-v-epstein-no-19-2221-2d-cir-2019',
+      'court-records-united-states-v-epstein-no-119-cr-00490-sdny-2019',
+      'court-records-state-florida-v-epstein-no-50-2006-cf-009454-axxx-mb-fla-15th-cir-ct-2006',
+      'court-records-state-florida-v-epstein-no-50-2008-cf-009381-axxx-mb-fla-15th-cir-ct-2008',
+      'court-records-epstein-v-no-sc15-2286-fla-sup-ct-2015',
+      'court-records-epstein-v-rothstein-no-50-2009-ca-040800-xxxx-mb-fla-15th-cir-ct-2009',
+      'court-records-matter-estate-jeffrey-e-epstein-deceased-no-st-21-rv-00005-vi-super-ct-2021',
+      'court-records-maxwell-v-estate-jeffrey-epstein-no-st-20-cv-155-vi-super-ct-2020'
+    )
+  )) |>
+  mutate(file_type = factor(file_type, levels = c("audio", "corrupt", "email", "other", "photo", "video")))
+
+court_case_labels <- c(
+  'court-records-ca-florida-holdings-llc-publisher-palm-beach-post-v-aronberg-no-50-2019-ca-014681-xxxx-mb' = "CA Florida Holdings v. Aronberg",
+  'court-records-doe-v-united-states-no-908-cv-80736-sd-fla-2008' = "Doe v. US",
+  'court-records-government-united-states-virgin-islands-v-jpmorgan-chase-bank-na-no-122-cv-10904-sdny-2022' = "US Virgin Islands v. JP Morgan Chase Bank",
+  'court-records-operating-engineers-construction-industry-and-miscellaneous-pension-fund-v-dimon-no-123-cv-03903' = "Pension Fund v. Dimon",
+  'court-records-re-grand-jury-05-02-wpb-07-103-wpb-no-925-mc-80920-sd-fla-2025' = "In re: Grand Jury 05-02 (WPB)",
+  'court-records-united-states-v-maxwell-no-20-3061-2d-cir-2020' = "US v. Maxwell, 3061",
+  'court-records-united-states-v-maxwell-no-21-0058-2d-cir-2021' = "US v. Maxwell, 0058",
+  'court-records-united-states-v-maxwell-no-21-0770-2d-cir-2021' = "US v. Maxwell, 0770",
+  'court-records-united-states-v-maxwell-no-22-1426-2d-cir-2022' = "US v. Maxwell, 1426",
+  'court-records-united-states-v-maxwell-no-120-cr-00330-sdny-2020' = "US v. Maxwell, 00330",
+  'court-records-maxwell-v-united-states-no-24-1073-us-2025-petition-cert' = "Maxwell v. US",
+  'court-records-united-states-v-maxwell-no-120-mj-00132-dnh-2020' = "US v. Maxwell, 00132",
+  'court-records-v-maxwell-no-115-cv-07433-sdny-2015' = "[Redacted] v. Maxwell, 07433",
+  'court-records-v-maxwell-no-117-mc-00025-sdny-2016' = "[Redacted] v. Maxwell, 00025",
+  'court-records-united-states-v-noel-no-119-cr-00830-sdny-2019' = "US v. Noel, 00830",
+  'court-records-v-indyke-no-119-cv-10474-sdny-2019' = "[Redacted] v. Indyke, 10474",
+  'court-records-v-indyke-no-119-cv-10475-sdny-2019' = "[Redacted] v. Indyke, 10475",
+  'court-records-v-indyke-no-119-cv-10476-sdny-2019' = "[Redacted] v. Indyke, 10476",
+  'court-records-v-indyke-no-119-cv-10479-sdny-2019' = "[Redacted] v. Indyke, 10479",
+  'court-records-v-indyke-no-119-cv-10788-sdny-2019' = "[Redacted] v. Indyke, 10488",
+  'court-records-doe-17-v-indyke-no-119-cv-09610-sdny-2019' = "Doe 17 v. Indyke",
+  'court-records-doe-1000-v-indyke-no-119-cv-10577-sdny-2019' = "Doe 1000 v. Indyke",
+  'court-records-doe-v-indyke-no-119-cv-08673-sdny-2019' = "Doe v. Indyke, 08673",
+  'court-records-doe-v-indyke-no-119-cv-11869-sdny-2019' = "Doe v. Indyke, 11869",
+  'court-records-doe-v-indyke-no-120-cv-00484-sdny-2020' = "Doe v. Indyke, 00484",
+  'court-records-doe-v-indyke-no-120-cv-02365-sdny-2020' = "Doe v. Indyke, 02365",
+  'court-records-v-nine-east-71st-street-no-119-cv-07625-sdny-2019' = "[Redacted] v. Nine East 71st St",
+  'court-records-doe-no-3-v-epstein-no-908-cv-80232-sd-fla-2008' = "Doe 3 v. Epstein",
+  'court-records-doe-no-4-v-epstein-no-908-cv-80380-sd-fla-2008' = "Doe 4 v. Epstein",
+  'court-records-doe-no-5-v-epstein-no-908-cv-80381-sd-fla-2008' = "Doe 5 v. Epstein",
+  'court-records-doe-no-6-v-epstein-no-908-cv-80994-sd-fla-2008' = "Doe 6 v. Epstein",
+  'court-records-doe-no-8-v-epstein-no-909-cv-80802-sd-fla-2009' = "Doe 8 v. Epstein",
+  'court-records-doe-no-101-v-epstein-no-909-cv-80591-sd-fla-2009' = "Doe 101 v. Epstein",
+  'court-records-doe-no-102-v-epstein-no-909-cv-80656-sd-fla-2009' = "Doe 102 v. Epstein",
+  'court-records-doe-no-103-v-epstein-no-910-cv-80309-sd-fla-2010' = "Doe 103 v. Epstein",
+  'court-records-doe-v-epstein-no-908-cv-80069-sd-fla-2008' = "Doe v. Epstein, 80069",
+  'court-records-doe-v-epstein-no-908-cv-80119-sd-fla-2008' = "Doe v. Epstein, 80119",
+  'court-records-doe-v-epstein-no-908-cv-80804-sd-fla-2008' = "Doe v. Epstein, 80804",
+  'court-records-doe-v-epstein-no-909-v-80469-sd-fla-2009' = "Doe v. Epstein, 80469",
+  'court-records-epstein-v-no-sc15-2286-fla-sup-ct-2015' = "Epstein v. [Redacted]",
+  'court-records-epstein-v-rothstein-no-50-2009-ca-040800-xxxx-mb-fla-15th-cir-ct-2009' = "Epstein v. Rothstein",
+  'court-records-jane-doe-43-v-epstein-no-117-cv-00616-sdny-2017' = "Doe 43 v. Epstein",
+  'court-records-matter-estate-jeffrey-e-epstein-deceased-no-st-21-rv-00005-vi-super-ct-2021' = "Matter of the Estate of Jeffery Epstein",
+  'court-records-maxwell-v-estate-jeffrey-epstein-no-st-20-cv-155-vi-super-ct-2020' = "Maxwell v. Estate Jeffery Epstein",
+  'court-records-state-florida-v-epstein-no-50-2006-cf-009454-axxx-mb-fla-15th-cir-ct-2006' = "Florida v. Epstein, 009454",
+  'court-records-state-florida-v-epstein-no-50-2008-cf-009381-axxx-mb-fla-15th-cir-ct-2008' = "Florida v. Epstein, 009381",
+  'court-records-united-states-v-epstein-no-19-2221-2d-cir-2019' = "US v. Epstein, 2221",
+  'court-records-united-states-v-epstein-no-119-cr-00490-sdny-2019' = "US v. Epstein, 00490",
+  'court-records-v-epstein-909-cv-81092-sd-fla-2009' = "[Redacted] v. Epstein, 81092",
+  'court-records-v-epstein-no-910-cv-80447-sd-fla-2010' = "[Redacted] v. Epstein, 80447",
+  'court-records-v-epstein-no-910-cv-81111-sd-fla-2010' = "[Redacted] v. Epstein, 81111"
+)
+
+data_other <- data |>
+  filter(!grepl("court-records-", file_origin)) |>
+  filter(!grepl("IMAGES", file_origin)) |>
+  filter(!grepl("NATIVE", file_origin)) |>
+  filter(!grepl("data-set", file_origin)) |>
+  mutate(file_origin = factor(
+    file_origin,
+    levels = str_sort(unique(file_origin), numeric = TRUE)
+  )) |>
+  mutate(file_type = factor(file_type, levels = c("audio", "corrupt", "email", "other", "photo", "video")))
+
+others_labels <- c(
+    'bop-video-footage' = "Federal Bureau of Prisons Footage",
+    'first-phase-declassified-epstein-files' = "First Phase Declassified Files",
+    'foia-customs-and-border-protection-cbp' = "Customs and Border Protection",
+    'foia-federal-bureau-investigation-fbi' = "Federal Bureau of Investigation",
+    'foia-federal-bureau-prisons-bop' = "Federal Bureau of Prisons",
+    'foia-florida' = "Florida",
+    'maxwell-proffer' = "Prior Disclosure - Maxwell Proffer",
+    'memoranda-and-correspondence' = "Prior Disclosure - Memoranda and Corres."
+  )
+
+data_sets <- data |>
+  filter(grepl("data-set", file_origin)) |>
+  mutate(file_origin = factor(
+    file_origin,
+    levels = str_sort(unique(file_origin), numeric = TRUE)
+  )) |>
+  mutate(file_type = factor(file_type, levels = c("audio", "corrupt", "email", "other", "photo", "video")))
+
+data_sets_labels <- c(
+    'data-set-1-files' = "Dataset 1",
+    'data-set-2-files' = "Dataset 2",
+    'data-set-3-files' = "Dataset 3",
+    'data-set-4-files' = "Dataset 4",
+    'data-set-5-files' = "Dataset 5",
+    'data-set-6-files' = "Dataset 6",
+    'data-set-7-files' = "Dataset 7",
+    'data-set-8-files' = "Dataset 8",
+    'data-set-9-files' = "Dataset 9",
+    'data-set-10-files' = "Dataset 10",
+    'data-set-11-files' = "Dataset 11",
+    'data-set-12-files' = "Dataset 12"
+    )
+
+data_oversight <- data |>
+  filter(grepl("IMAGES|NATIVE", file_origin)) |>
+  mutate(file_origin = factor(
+    file_origin,
+    levels = str_sort(unique(file_origin), numeric = TRUE)
+  )) |>
+  mutate(file_type = factor(file_type, levels = c("audio", "corrupt", "email", "other", "photo", "video")))
+```
+
+### Plots
+
+```{r}
+totals_court <- ggplot(data_court) +
+  aes(file_origin) +
+  geom_bar(fill = "grey80", color = "grey78") +
+  geom_text(aes(label = after_stat(count)), 
+            stat = "count",
+            size = 6,
+            size.unit = "pt",
+            vjust = -0.3) +
+  scale_x_discrete(labels = court_case_labels) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 5), limits = c(0,3500)) +
+  theme_void() +
+  theme(axis.title.y = element_blank(), # remove label
+        axis.text.y = element_blank(), # remove number
+        axis.ticks.y = element_blank(), # remove ticks
+        axis.line.y = element_blank(), # remove line (blank here)
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(
+          size = 6,
+          angle = -90,
+          hjust = 0,
+          vjust = 0.5),
+        plot.margin = margin(r = 10, l = 10, b = 10),
+        plot.background = element_rect(fill = "white", color = NA)
+  ) + 
+  labs(title = "Court Cases")
+
+totals_other <- ggplot(data_other) +
+  aes(file_origin) +
+  geom_bar(fill = "grey80", color = "grey78") +
+  geom_text(aes(label = after_stat(count)), 
+            stat = "count",
+            size = 6,
+            size.unit = "pt",
+            vjust = -0.3) +
+  scale_x_discrete(labels = others_labels) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 5), limits = c(0,3500)) +
+  theme_void() +
+  theme(axis.title.y = element_blank(), # remove label
+        axis.text.y = element_blank(), # remove number
+        axis.ticks.y = element_blank(), # remove ticks
+        axis.line.y = element_blank(), # remove line (blank here)
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(
+          size = 6,
+          angle = -90,
+          hjust = 0,
+          vjust = 0.5),
+        plot.margin = margin(r = 10, l = 10, b = 10),
+        plot.background = element_rect(fill = "white", color = NA)
+  ) + 
+  labs(title = "Other File Origins")
+
+totals_set <- ggplot(data_sets) +
+  aes(file_origin) +
+  geom_bar(fill = "grey80", color = "grey78") +
+  geom_text(aes(label = after_stat(count)), 
+            stat = "count",
+            size = 6,
+            size.unit = "pt",
+            vjust = -0.3) +
+  scale_x_discrete(labels = data_sets_labels) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 5)) +
+  theme_void() +
+  theme(axis.title.y = element_blank(), # remove label
+        axis.text.y = element_blank(), # remove number
+        axis.ticks.y = element_blank(), # remove ticks
+        axis.line.y = element_blank(), # remove line (blank here)
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(
+          size = 6,
+          angle = -90,
+          hjust = 0,
+          vjust = 0.5),
+        plot.margin = margin(r = 10, l = 10, b = 10),
+        plot.background = element_rect(fill = "white", color = NA)
+  ) + 
+  labs(title = "DOJ Datasets")
+
+totals_oversight <- ggplot(data_oversight) +
+  aes(file_origin) +
+  geom_bar(fill = "grey80", color = "grey78") +
+  geom_text(aes(label = after_stat(count)), 
+            stat = "count",
+            size = 6,
+            size.unit = "pt",
+            vjust = -0.3) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 5), limits = c(0,3500)) +
+  theme_void() +
+  theme(axis.title.y = element_blank(), # remove label
+        axis.text.y = element_blank(), # remove number
+        axis.ticks.y = element_blank(), # remove ticks
+        axis.line.y = element_blank(), # remove line (blank here)
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(
+          size = 6,
+          angle = -90,
+          hjust = 0,
+          vjust = 0.5),
+        plot.margin = margin(r = 10, l = 10, b = 10),
+        plot.background = element_rect(fill = "white", color = NA)
+  ) + 
+  labs(title = "Oversight Committee Files")
+```
+
+### Plots Combined
+
+```{r}
+#| echo: false
+top <- totals_oversight | totals_other
+
+combined <- top / totals_court
+combined <- combined + plot_layout(heights = c(1,1))
+totals_set
+```
+
+### Percentage of File Types by Dataset
+
+```{r}
+#| echo: false
+files_court <- data_court |>
+  mutate(court_label = coalesce(court_case_labels[file_origin], file_origin)) |>
+  ggplot(aes(x = file_origin, fill = file_type)) +
+  geom_bar(position = "fill", width = 0.7) +
+  geom_text(
+    aes(x = file_origin, y = 0, label = court_label),
+    size = 2.5,
+    angle = -90,
+    hjust = 0,
+    nudge_y = -0.05
+  ) +
+  theme_void() +
+  coord_cartesian(clip = "off") +
+  theme(
+    plot.margin = margin(r = 10, l = 10, b = 10),
+    legend.key = element_rect(fill = NA, color = NA),
+    legend.text = element_text(size = 9),
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.position = "none",
+    plot.background = element_rect(fill = "white", color = NA)
+  ) +
+  scale_y_continuous(limits = c(-1, 1)) +
+  labs(title = "Court Cases")
+
+files_other <- data_other |>
+  mutate(other_label = coalesce(others_labels[file_origin], file_origin)) |>
+  ggplot(aes(x = file_origin, fill = file_type)) +
+  geom_bar(position = "fill", width = 0.7) +
+  geom_text(
+    aes(x = file_origin, y = 0, label = other_label),
+    size = 2.5,
+    angle = -90,
+    hjust = 0,
+    nudge_y = -0.05
+  ) +
+  theme_void() +
+  coord_cartesian(clip = "off") +
+  theme(
+    plot.margin = margin(r = 10, l = 10, b = 10),
+    legend.key = element_rect(fill = NA, color = NA),
+    legend.text = element_text(size = 9),
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.position = "none",
+    plot.background = element_rect(fill = "white", color = NA)
+  ) +
+  scale_y_continuous(limits = c(-1, 1)) +
+  labs(title = "Other File Origins",
+       fill = "File Type")
+
+files_oversight <- ggplot(data_oversight) +
+  aes(x = file_origin, fill = file_type) +
+  geom_bar(position = "fill", width = 0.7) +
+  geom_text(
+    aes(x = file_origin, y = 0, label = file_origin),
+    size = 2.5,
+    angle = -90,
+    hjust = 0,
+    nudge_y = -0.05
+  ) +
+  scale_y_continuous(limits = c(-1, 1)) +
+  theme_void() +
+  coord_cartesian(clip = "off") +
+  theme(
+    plot.margin = margin(r = 10, l = 10, b = 10),
+    legend.key = element_rect(fill = NA, color = NA),
+    legend.text = element_text(size = 9),
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.position = "none",
+    plot.background = element_rect(fill = "white", color = NA)
+  ) +
+  labs(title = "Oversight Committee Files")
+
+files_sets <- data_sets |>
+  mutate(data_set_label = coalesce(data_sets_labels[file_origin], file_origin)) |>
+  ggplot(aes(x = file_origin, fill = file_type)) +
+  geom_bar(position = "fill", width = 0.7) +
+  geom_text(
+    aes(x = file_origin, y = 0, label = data_set_label),
+    size = 2.5,
+    angle = -90,
+    hjust = 0,
+    nudge_y = -0.05
+  ) +
+  scale_y_continuous(limits = c(-1, 1)) +
+  theme_void() +
+  coord_cartesian(clip = "off") +
+  theme(
+    plot.margin = margin(r = 10, l = 10, b = 10),
+    legend.key = element_rect(fill = NA, color = NA),
+    legend.text = element_text(size = 9),
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.position = "none",
+    plot.background = element_rect(fill = "white", color = NA)
+  ) +
+  labs(title = "DOJ Datasets")
+
+legend_dummy <- data.frame(
+    file_type = factor(names(c(
+    audio = "#F35E5A",
+    corrupt = "#A89005",
+    email = "#17B12B",
+    other = "#17B3B7",
+    photo = "#5086FF",
+    video = "#EF43DC"
+)), levels = names(c(
+    audio = "#F35E5A",
+    corrupt = "#A89005",
+    email = "#17B12B",
+    other = "#17B3B7",
+    photo = "#5086FF",
+    video = "#EF43DC"
+))),
+    x = 1,
+    y = 1
+)
+
+legend_plot <- ggplot(legend_dummy, aes(x = x, y = y, fill = file_type)) +
+    geom_col() +
+    scale_fill_manual(values = c(
+    audio = "#F35E5A",
+    corrupt = "#A89005",
+    email = "#17B12B",
+    other = "#17B3B7",
+    photo = "#5086FF",
+    video = "#EF43DC"
+), drop = FALSE) +
+    labs(fill = "File Type") +
+    theme(
+        legend.key = element_rect(fill = NA, color = NA),
+        legend.text = element_text(size = 9),
+        legend.title = element_text(size = 10, face = "bold")
+    )
+
+file_type_legend <- get_legend(legend_plot)
+```
+
+### Plots Combined
+
+```{r}
+#| echo: false
+top2 <- files_sets + files_oversight + files_other +
+  plot_layout(widths = c(length(unique(data_sets$file_origin)),
+                         length(unique(data_oversight$file_origin)),
+                         length(unique(data_other$file_origin)))) +
+  theme(
+    plot.margin = margin(b = 80)
+  )
+
+combined_2 <- (top2 / files_court) | file_type_legend
+
+combined_2 <- combined_2 + 
+  plot_layout(widths = c(4, 1), heights = c(3.2, 0.9)) &
+  theme(plot.margin = margin(l = 10, r = 10, b = 52))
+
+combined_2
+```
+
+## Number of files that have each page length
+
+```{r}
+length_table <- data |>
+  filter(!is.na(file_length)) |>
+  count(file_length, name = "Count") |>
+  arrange(desc(Count)) |>
+  rename(`Page Length` = file_length) |>
+  mutate(Percent = round(Count / sum(Count) * 100, 2))
+
+length_table
+```
+
+```{r}
+#| echo: false
+dp <- data |>
+  filter(!is.na(file_length)) |>
+  ggplot(aes(x = file_length)) +
+  geom_histogram(binwidth = 50, fill = "black", color = "white") +
+  scale_y_log10() + 
+  scale_x_continuous(n.breaks = 6) +
+  labs(x = "File Length",
+       y = "Count (log)",
+       title = "Overall Pattern of Page Lengths")
+dp
+```
+
+## Total number of files that are emails
+
+```{r}
+data |>
+  filter(file_type == "email") |>
+  nrow()
+```
+
+## Total number of emails
+
+```{r}
+nrow(data_e)
+```
+
+## Which file numbers are missing
+
+```{r}
+DOJ <- data |>
+  filter(!grepl("IMAGE", file_origin)) |>
+  filter(!grepl("NATIVE", file_origin))
+
+DOJ |>
+  arrange(desc(file_origin))
+```
+
+```{r}
+2847271 - 1396349
+```
+
+1,451,036 files are not released from the DOJ release, assuming numbers are sequential.
+
+```{r}
+Oversight <- data |>
+  filter(grepl("IMAGE|NATIVE", file_origin))
+
+Oversight |>
+  arrange(desc(file_origin))
+```
+
+```{r}
+33285 - 33376
+```
+
+```{r}
+dup_rows <- Oversight |>
+  mutate(file_id = str_extract(file_name, r"(DOJ-OGR-\d+)")) |>
+  group_by(file_id) |>
+  filter(n() > 1) |>
+  ungroup() |>
+  arrange(file_id, file_name)
+```
+
+166 files are duplicates, so 83 are duplicates.
+
+## Missing Files By Dataset
+
+```{r}
+file_origin <- c("Data Set 1", 
+                 "Data Set 2",
+                 "Data Set 3",
+                 "Data Set 4",
+                 "Data Set 5",
+                 "Data Set 6",
+                 "Data Set 7",
+                 "Data Set 8",
+                 "Data Set 9",
+                 "Data Set 10",
+                 "Data Set 11",
+                 "Data Set 12",
+                 "CA Florida Holdings v. Aronberg",
+                 "Doe 17 v. Indyke",
+                 "Doe 1000 v. Indyke",
+                 "Doe 3 v. Epstein",
+                 "Doe 4 v. Epstein",
+                 "Doe 5 v. Epstein",
+                 "Doe 6 v. Epstein",
+                 "Doe 8 v. Epstein",
+                 "Doe 101 v. Epstein",
+                 "Doe 102 v. Epstein",
+                 "Doe 103 v. Epstein",
+                 "Doe v. Epstein, 80069",
+                 "Doe v. Epstein, 80119",
+                 "Doe v. Epstein, 80804",
+                 "Doe v. Epstein, 80469",
+                 "Doe v. Indyke, 08673",
+                 "Doe v. Indyke, 11869",
+                 "Doe v. Indyke, 00484",
+                 "Doe v. Indyke, 02365",
+                 "Doe v. US",
+                 "Epstein v. [Redacted]",
+                 "Epstein v. Rothstein",
+                 "US Virgin Islands v. JP Morgan Chase Bank",
+                 "Doe 43 v. Epstein",
+                 "Matter of the Estate of Jeffery Epstein",
+                 "Maxwell v. Estate Jeffery Epstein",
+                 "Maxwell v. US",
+                 "Pension Fund v. Dimon",
+                 "In re: Grand Jury 05-02 (WPB)",
+                 "Florida v. Epstein, 009454",
+                 "Florida v. Epstein, 009381",
+                 "US v. Epstein, 2221",
+                 "US v. Epstein, 00490",
+                 "US v. Maxwell, 3061",
+                 "US v. Maxwell, 0058",
+                 "US v. Maxwell, 0770",
+                 "US v. Maxwell, 1426",
+                 "US v. Maxwell, 00330",
+                 "US v. Maxwell, 00132",
+                 "US v. Noel, 00830",
+                 "[Redacted] v. Epstein, 81092",
+                 "[Redacted] v. Epstein, 80447",
+                 "[Redacted] v. Epstein, 81111",
+                 "[Redacted] v. Indyke, 10474",
+                 "[Redacted] v. Indyke, 10475",
+                 "[Redacted] v. Indyke, 10476",
+                 "[Redacted] v. Indyke, 10479",
+                 "[Redacted] v. Indyke, 10488",
+                 "[Redacted] v. Maxwell, 07433",
+                 "[Redacted] v. Maxwell, 00025",
+                 "[Redacted] v. Nine East 71st St",
+                 "Customs and Border Protection (CBP)",
+                 "Federal Bureau of Investigation (FBI)",
+                 "Federal Bureau of Prisons (BOP)",
+                 "Florida",
+                 "First Phase of Declassified Epstein Files",
+                 "BOP Video Footage",
+                 "Maxwell Proffer",
+                 "Memoranda and Correspondence")
+file_start <- c(1, # dataset 1
+                3159, # dataset 2
+                3380, # dataset 3
+                5705, # dataset 4
+                8409, # dataset 5
+                8529, # dataset 6
+                9016, # dataset 7
+                9676, # dataset 8
+                39025, # dataset 9
+                1262782, # dataset 10
+                2209722, # dataset 11
+                2730265, # dataset 12
+                2732399, # court 1
+                2737900, # court 2
+                2737470, # court 3
+                2739227, # court 4
+                2740335, # court 5
+                2741488, # court 6
+                2742589, # court 7
+                2743308, # court 8
+                2738115, # court 9
+                2738734, # court 10
+                2739126, # court 11
+                2743481, # court 12
+                2743522, # court 13
+                2749801, # court 14
+                2750312, # court 15
+                2750825, # court 16
+                2751696, # court 17
+                2751880, # court 18
+                2752550, # court 19
+                2752688, # court 20
+                2759172, # court 21
+                2759203, # court 22
+                2805472, # court 23
+                2819514, # court 24
+                2821562, # court 25
+                2821966, # court 26
+                2822476, # court 27
+                2822733, # court 28
+                2819479, # court 29
+                2823228, # court 30
+                2823690, # court 31
+                2824653, # court 32
+                2824136, # court 33
+                2843065, # court 34
+                2843520, # court 35
+                2824716, # court 36
+                2844213, # court 37
+                2829305, # court 38
+                2843002, # court 39
+                2845736, # court 40
+                2820629, # court 41
+                2732320, # court 42
+                2820992, # court 43
+                2777531, # court 44
+                2777675, # court 45
+                2819086, # court 46
+                2731941, # court 47
+                2737217, # court 48
+                2778452, # court 49
+                2758635, # court 50
+                2845981, # court 51
+                2847772, # foia 1
+                2849279, # foia 2
+                2850705, # foia 3
+                2731891, # foia 4
+                2846457, # first phase declassified
+                2731862, # bop
+                2731875, # foia 5
+                2847271 # foia 6
+)
+file_end <- c(3158, # dataset 1
+              3857, # dataset 2
+              5586, # dataset 3
+              8320, # dataset 4
+              8527, # dataset 5
+              8998, # dataset 6
+              9664, # dataset 7
+              39023, # dataset 8
+              1262781, # dataset 9
+              2212882, # dataset 10
+              2730262, # dataset 11
+              2858495, # dataset 12
+              2737215, # court 1
+              2738114, # court 2
+              2737898, # court 3
+              2740334, # court 4
+              2741487, # court 5
+              2742588, # court 6
+              2743307, # court 7
+              2743480, # court 8
+              2738733, # court 9
+              2739125, # court 10
+              2739226, # court 11
+              2743521, # court 12
+              2749800, # court 13
+              2750311, # court 14
+              2750824, # court 15
+              2751695, # court 16
+              2751879, # court 17
+              2752549, # court 18
+              2752686, # court 19
+              2758629, # court 20
+              2759201, # court 21
+              2777527, # court 22
+              2819084, # court 23
+              2820628, # court 24
+              2821965, # court 25
+              2822475, # court 26
+              2822732, # court 27
+              2823227, # court 28
+              2819502, # court 29
+              2823689, # court 30
+              2824135, # court 31
+              2824653, # court 32
+              2824649, # court 33
+              2843065, # court 34
+              2844110, # court 35
+              2825196, # court 36
+              2844213, # court 37
+              2842971, # court 38
+              2843063, # court 39
+              2845980, # court 40
+              2820991, # court 41
+              2732398, # court 42
+              2821561, # court 43
+              2777673, # court 44
+              2778451, # court 45
+              2819477, # court 46
+              2732318, # court 47
+              2737468, # court 48
+              2805470, # court 49
+              2759171, # court 50
+              2846454, # court 51
+              2849278, # foia 1
+              2850658, # foia 2
+              2853705, # foia 3
+              2857520, # foia 4
+              2846673, # first phase declassified
+              2857523, # bop
+              2847269, # foia 5
+              2847765 # foia 6
+              )
+expected <- c(3158, # dataset 1
+              699, # dataset 2
+              1729, # dataset 3
+              2734, # dataset 4
+              208, # dataset 5
+              470, # dataset 6
+              666, # dataset 7
+              29359, # dataset 8
+              1223758, # dataset 9
+              950101, # dataset 10
+              517380, # dataset 11
+              128235, # dataset 12
+              NA_character_, # court 1
+              NA_character_, # court 2
+              NA_character_, # court 3
+              NA_character_, # court 4
+              NA_character_, # court 5
+              NA_character_, # court 6
+              NA_character_, # court 7
+              NA_character_, # court 8
+              NA_character_, # court 9
+              NA_character_, # court 10
+              NA_character_, # court 11
+              NA_character_, # court 12
+              NA_character_, # court 13
+              NA_character_, # court 14
+              NA_character_, # court 15
+              NA_character_, # court 16
+              NA_character_, # court 17
+              NA_character_, # court 18
+              NA_character_, # court 19
+              NA_character_, # court 20
+              NA_character_, # court 21
+              NA_character_, # court 22
+              NA_character_, # court 23
+              NA_character_, # court 24
+              NA_character_, # court 25
+              NA_character_, # court 26
+              NA_character_, # court 27
+              NA_character_, # court 28
+              NA_character_, # court 29
+              NA_character_, # court 30
+              NA_character_, # court 31
+              NA_character_, # court 32
+              NA_character_, # court 33
+              NA_character_, # court 34
+              NA_character_, # court 35
+              NA_character_, # court 36
+              NA_character_, # court 37
+              NA_character_, # court 38
+              NA_character_, # court 39
+              NA_character_, # court 40
+              NA_character_, # court 41
+              NA_character_, # court 42
+              NA_character_, # court 43
+              NA_character_, # court 44
+              NA_character_, # court 45
+              NA_character_, # court 46
+              NA_character_, # court 47
+              NA_character_, # court 48
+              NA_character_, # court 49
+              NA_character_, # court 50
+              NA_character_, # court 51
+              NA_character_, # foia 1
+              NA_character_, # foia 2
+              NA_character_, # foia 3
+              NA_character_, # foia 4
+              NA_character_, # first phase declassified
+              NA_character_, # bop
+              NA_character_, # foia 5
+              NA_character_ # foia 6
+              )
+actual <- c(3156, # dataset 1
+          566, # dataset 2
+          76, # dataset 3
+          152, # dataset 4
+          120, # dataset 5
+          13, # dataset 6
+          17, # dataset 7
+          11014, # dataset 8
+          533412, # dataset 9
+          503946, # dataset 10
+          331656, # dataset 11
+          175, # dataset 12
+          211, # court 1
+          54, # court 2
+          69, # court 3
+          165, # court 4
+          182, # court 5
+          166, # court 6
+          101, # court 7
+          34, # court 8
+          83, # court 9
+          56, # court 10
+          24, # court 11
+          12, # court 12
+          856, # court 13
+          32, # court 14
+          72, # court 15
+          125, # court 16
+          54, # court 17
+          162, # court 18
+          47, # court 19
+          695, # court 20
+          11, # court 21
+          1412, # court 22
+          1839, # court 23
+          234, # court 24
+          17, # court 25
+          68, # court 26
+          16, # court 27
+          65, # court 28
+          4, # court 29
+          108, # court 30
+          62, # court 31
+          1, # court 32
+          84, # court 33
+          1, # court 34
+          4, # court 35
+          3, # court 36
+          1, # court 37
+          1019, # court 38
+          5, # court 39
+          66, # court 40
+          26, # court 41
+          17, # court 42
+          72, # court 43
+          41, # court 44
+          147, # court 45
+          62, # court 46
+          53, # court 47
+          59, # court 48
+          2965, # court 49
+          77, # court 50
+          91, # court 51
+          8, # foia 1
+          22, # foia 2
+          4, # foia 3
+          77, # foia 4
+          4, # first phase declassified
+          16, # bop
+          21, # foia 5
+          6 # foia 6
+          )
+not_released <- c(2, # dataset 1
+                  133, # dataset 2
+                  649, # dataset 3
+                  2582, # dataset 4
+                  88, # dataset 5
+                  457, # dataset 6
+                  649, # dataset 7
+                  18345, # dataset 8
+                  690346, # dataset 9
+                  446155, # dataset 10
+                  185724, # dataset 11
+                  128060, # dataset 12
+                  NA_character_, # court 1
+                  NA_character_, # court 2
+                  NA_character_, # court 3
+                  NA_character_, # court 4
+                  NA_character_, # court 5
+                  NA_character_, # court 6
+                  NA_character_, # court 7
+                  NA_character_, # court 8
+                  NA_character_, # court 9
+                  NA_character_, # court 10
+                  NA_character_, # court 11
+                  NA_character_, # court 12
+                  NA_character_, # court 13
+                  NA_character_, # court 14
+                  NA_character_, # court 15
+                  NA_character_, # court 16
+                  NA_character_, # court 17
+                  NA_character_, # court 18
+                  NA_character_, # court 19
+                  NA_character_, # court 20
+                  NA_character_, # court 21
+                  NA_character_, # court 22
+                  NA_character_, # court 23
+                  NA_character_, # court 24
+                  NA_character_, # court 25
+                  NA_character_, # court 26
+                  NA_character_, # court 27
+                  NA_character_, # court 28
+                  NA_character_, # court 29
+                  NA_character_, # court 30
+                  NA_character_, # court 31
+                  NA_character_, # court 32
+                  NA_character_, # court 33
+                  NA_character_, # court 34
+                  NA_character_, # court 35
+                  NA_character_, # court 36
+                  NA_character_, # court 37
+                  NA_character_, # court 38
+                  NA_character_, # court 39
+                  NA_character_, # court 40
+                  NA_character_, # court 41
+                  NA_character_, # court 42
+                  NA_character_, # court 43
+                  NA_character_, # court 44
+                  NA_character_, # court 45
+                  NA_character_, # court 46
+                  NA_character_, # court 47
+                  NA_character_, # court 48
+                  NA_character_, # court 49
+                  NA_character_, # court 50
+                  NA_character_, # court 51
+                  NA_character_, # foia 1
+                  NA_character_, # foia 2
+                  NA_character_, # foia 3
+                  NA_character_, # foia 4
+                  NA_character_, # first phase declassified
+                  NA_character_, # bop
+                  NA_character_, # foia 5
+                  NA_character_ # foia 6
+                  )
+counts <- data.frame(file_origin, file_start, file_end, expected, actual, not_released)
+```
+
+```{r}
+counts |>
+  mutate(file_origin = fct_reorder(file_origin, file_start, .desc = TRUE)) |>
+  filter(file_origin != "Data Set 1") |>
+  filter(file_origin != "Data Set 2") |>
+  filter(file_origin != "Data Set 3") |>
+  filter(file_origin != "Data Set 4") |>
+  filter(file_origin != "Data Set 5") |>
+  filter(file_origin != "Data Set 6") |>
+  filter(file_origin != "Data Set 7") |>
+  filter(file_origin != "Data Set 8") |>
+  filter(file_origin != "Data Set 9") |>
+  filter(file_origin != "Data Set 10") |>
+  filter(file_origin != "Data Set 11") |>
+  ggplot(aes(y = file_origin)) +
+  geom_segment(
+    aes(x = file_start, xend = file_end, yend = file_origin),
+    lineend = "round"
+  ) +
+  scale_x_continuous(labels = scales::comma) +
+  labs(
+    x = "File ID",
+    y = NULL,
+    title = "File ID ranges by dataset origin"
+  ) +
+  theme_minimal(base_size = 9) +
+  theme(
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(size = 12, face = "bold")
+  )
+```
+
+```{r}
+one_six <- counts |>
+  mutate(file_origin = fct_reorder(file_origin, file_start, .desc = TRUE)) |>
+  filter(grepl("Data Set", file_origin)) |>
+  filter(file_origin != "Data Set 12") |>
+  filter(file_origin != "Data Set 11") |>
+  filter(file_origin != "Data Set 10") |>
+  filter(file_origin != "Data Set 9") |>
+  filter(file_origin != "Data Set 8") |>
+  filter(file_origin != "Data Set 7") |>
+  ggplot(aes(y = file_origin)) +
+  geom_segment(
+    aes(x = file_start, xend = file_end, yend = file_origin),
+    lineend = "round"
+  ) +
+  scale_x_continuous(labels = scales::comma) +
+  labs(
+    x = "File ID",
+    y = NULL,
+    title = "File ID ranges by dataset origin"
+  ) +
+  theme_minimal(base_size = 9) +
+  theme(
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(size = 12, face = "bold")
+  )
+```
+
+```{r}
+seven_twelve <- counts |>
+  mutate(file_origin = fct_reorder(file_origin, file_start, .desc = TRUE)) |>
+  filter(grepl("Data Set", file_origin)) |>
+  filter(file_origin != "Data Set 1") |>
+  filter(file_origin != "Data Set 2") |>
+  filter(file_origin != "Data Set 3") |>
+  filter(file_origin != "Data Set 4") |>
+  filter(file_origin != "Data Set 5") |>
+  filter(file_origin != "Data Set 6") |>
+  ggplot(aes(y = file_origin)) +
+  geom_segment(
+    aes(x = file_start, xend = file_end, yend = file_origin),
+    lineend = "round"
+  ) +
+  scale_x_continuous(labels = scales::comma) +
+  labs(
+    x = "File ID",
+    y = NULL,
+    title = "File ID ranges by dataset origin"
+  ) +
+  theme_minimal(base_size = 9) +
+  theme(
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(size = 12, face = "bold")
+  )
+```
+
+```{r}
+ggsave(
+    filename = file.path("/Volumes/Thesis/plots/1_files_by_type.png"),
+    plot = files_by_type,
+    width = 8, height = 5, dpi = 300
+)
+
+ggsave(
+    filename = file.path("/Volumes/Thesis/plots/2_totals_court.png"),
+    plot = totals_court,
+    width = 8, height = 5, dpi = 300
+)
+
+ggsave(
+    filename = file.path("/Volumes/Thesis/plots/3_totals_other.png"),
+    plot = totals_other,
+    width = 8, height = 5, dpi = 300
+)
+
+ggsave(
+    filename = file.path("/Volumes/Thesis/plots/4_totals_oversight.png"),
+    plot = totals_oversight,
+    width = 8, height = 5, dpi = 300
+)
+
+ggsave(
+    filename = file.path("/Volumes/Thesis/plots/5_totals_set.png"),
+    plot = totals_set,
+    width = 8, height = 5, dpi = 300
+)
+
+ggsave(
+    filename = file.path("/Volumes/Thesis/plots/6_files_court.png"),
+    plot = files_court,
+    width = 8, height = 5, dpi = 300
+)
+
+ggsave(
+    filename = file.path("/Volumes/Thesis/plots/7_files_other.png"),
+    plot = files_other,
+    width = 8, height = 5, dpi = 300
+)
+
+ggsave(
+    filename = file.path("/Volumes/Thesis/plots/8_files_oversight.png"),
+    plot = files_oversight,
+    width = 8, height = 5, dpi = 300
+)
+
+ggsave(
+    filename = file.path("/Volumes/Thesis/plots/9_files_sets.png"),
+    plot = files_sets,
+    width = 8, height = 5, dpi = 300
+)
+
+ggsave(
+    filename = file.path("/Volumes/Thesis/plots/10_one_six.png"),
+    plot = one_six,
+    width = 8, height = 5, dpi = 300
+)
+
+ggsave(
+    filename = file.path("/Volumes/Thesis/plots/10_seven_twelve.png"),
+    plot = seven_twelve,
+    width = 8, height = 5, dpi = 300
+)
+
+ggsave(
+    filename = file.path("/Volumes/Thesis/plots/11_file_type_legend.png"),
+    plot = file_type_legend,
+    width = 8, height = 5, dpi = 300
+)
+
+ggsave(
+    filename = file.path("/Volumes/Thesis/plots/12_combined.png"),
+    plot = combined,
+    width = 8, height = 5, dpi = 300
+)
+```
+
+```{r}
+ggsave(
+    filename = file.path("/Volumes/Thesis/plots/13_combined_2.png"),
+    plot = combined_2,
+    width = 8, height = 6.2, dpi = 300
+)
+```
+
+```{r}
+extraction <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_combined.csv")
+```
+
+```{r}
+extraction |>
+  filter(grepl("No Images Produced", text, ignore.case = TRUE))
+```
+
+```{r}
+data <- data |>
+  mutate(extension = sub(".*\\.", "", file_name))
+```
+
+```{r}
+data <- data |>
+  filter(extension != "TheJusticeDept") |>
+  filter(extension != "dl?inline") |>
+  filter(extension != "guidance") |>
+  filter(extension != "information-victims-large-cases")
+```
+
+```{r}
+ext <- ggplot(data) +
+  aes(extension) +
+  geom_bar(fill = "grey80", color = "grey78") +
+  geom_text(aes(label = after_stat(count)), 
+            stat = "count",
+            size = 6,
+            size.unit = "pt",
+            vjust = -0.3) +
+  theme_void() +
+  theme(axis.title.y = element_blank(), # remove label
+        axis.text.y = element_blank(), # remove number
+        axis.ticks.y = element_blank(), # remove ticks
+        axis.line.y = element_blank(), # remove line (blank here)
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(
+          size = 6,
+          angle = -90,
+          hjust = 0,
+          vjust = 0.5),
+        plot.margin = margin(r = 10, l = 10, b = 10),
+        plot.background = element_rect(fill = "white", color = NA)
+  ) + 
+  labs(title = "Total numbers by file extension")
+
+ext
+```
+
+```{r}
+ggsave(
+    filename = file.path("/Volumes/Thesis/plots/14_ext.png"),
+    plot = ext,
+    width = 8, height = 5, dpi = 300
+)
+```
+
+```{r}
+ggsave(
+    filename = file.path("/Volumes/Thesis/plots/15_page_length.png"),
+    plot = dp,
+    width = 8, height = 5, dpi = 300
+)
+```
+
+```{r}
+data_EFTA <- data |>
+  filter(grepl("EFTA", file_name))
+```
+
+```{r}
+#| eval: false
+files_by_type_EFTA <- ggplot(data = data_EFTA,
+       aes(
+         x = file_type,
+         fill = file_type
+       )) +
+  scale_fill_manual(values = c(
+    audio = "#F35E5A",
+    corrupt = "#A89005",
+    email = "#17B12B",
+    other = "#17B3B7",
+    photo = "#5086FF",
+    video = "#EF43DC"),
+    drop = FALSE
+  ) +
+  geom_bar() +
+  geom_text(aes(label = after_stat(count)), 
+            stat = "count",
+            size = 6,
+            size.unit = "pt",
+            vjust = -0.3) +
+  scale_y_sqrt() +
+  theme_void() +
+  theme(
+    plot.margin = margin(r = 10, l = 10, b = 10),
+    axis.title.y = element_blank(), # remove label
+    axis.text.y = element_blank(), # remove number
+    axis.ticks.y = element_blank(), # remove ticks
+    axis.line.y = element_blank(), # remove line (blank here)
+    axis.text.x = element_text(), # restore x tick labels
+    axis.title.x = element_blank(), # restore x axis title
+    legend.position = "none",
+    plot.background = element_rect(fill = "white", color = NA)
+        ) + 
+  labs(title = "Total number of files by type - EFTA release")
+files_by_type_EFTA
+```
+
+```{r}
+ggsave(
+    filename = file.path("/Volumes/Thesis/plots/16_files_by_type_EFTA.png"),
+    plot = files_by_type_EFTA,
+    width = 8, height = 5, dpi = 300
+)
+```
+
+```{r}
+nrow(data_EFTA)
+```
+
+```{r}
+sum(data_EFTA$file_length, na.rm = TRUE)
+```

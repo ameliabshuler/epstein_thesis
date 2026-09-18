@@ -1,0 +1,360 @@
+---
+title: "email-analysis"
+format: html
+editor: visual
+---
+
+## Sentiment Analysis
+
+```{r}
+library(tidytext)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(purrr)
+library(ggplot2)
+library(tidyverse)
+library(textstem)
+library(readr)
+library(forcats)
+```
+
+Import
+
+```{r}
+data_e <- read_csv("/Volumes/Thesis/Epstein_Files/output/email_text_clean.csv")
+```
+
+Setup
+
+```{r}
+TEXT_COL <- "text"
+ID_COL   <- "file_name"
+
+output_dir <- "/Volumes/Thesis/Epstein_Files/output/sentiment"
+
+doc_sent_dir <- file.path(output_dir, "doc_sentiment_by_dataset_lemma")
+word_cnt_dir <- file.path(output_dir, "word_counts_by_dataset_lemma")
+
+dir.create(doc_sent_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(word_cnt_dir, recursive = TRUE, showWarnings = FALSE)
+
+bing  <- get_sentiments("bing")
+afinn <- get_sentiments("afinn")
+nrc   <- get_sentiments("nrc")
+
+redaction_pattern <- regex("\\[[^\\]]*redact[^\\]]*\\]|redact\\w*", ignore_case = TRUE)
+```
+
+Word level sentiment, chunked by dataset
+
+```{r}
+datasets <- unique(data_e$file_origin)
+
+if (length(datasets) == 0) {
+  stop("`datasets` is empty — check that `data_e$file_origin` is the correct column name.")
+}
+
+for (i in seq_along(datasets)) {
+  ds <- datasets[i]
+  message("Word-level sentiment: ", ds, " (", i, "/", length(datasets), ")")
+  
+  ds_safe <- str_replace_all(ds, "[^A-Za-z0-9_-]", "_")
+  doc_sent_file <- file.path(doc_sent_dir, paste0(ds_safe, ".csv"))
+  word_cnt_file <- file.path(word_cnt_dir, paste0(ds_safe, ".csv"))
+  
+  if (file.exists(doc_sent_file) && file.exists(word_cnt_file)) {
+    message("  already done, skipping")
+    next
+  }
+  
+  chunk_tokens <- data_e |>
+    filter(file_origin == ds) |>
+    select(all_of(c(ID_COL, "file_origin", TEXT_COL))) |>
+    mutate(!!TEXT_COL := str_remove_all(!!sym(TEXT_COL), redaction_pattern)) |>
+    unnest_tokens(word, !!sym(TEXT_COL)) |>
+    mutate(word = lemmatize_words(word))
+  
+  doc_sent <- chunk_tokens |>
+    inner_join(bing, by = "word", relationship = "many-to-many") |>
+    count(!!sym(ID_COL), file_origin, sentiment) |>
+    pivot_wider(names_from = sentiment, values_from = n, values_fill = 0)
+  
+  if (!"positive" %in% names(doc_sent)) doc_sent$positive <- 0
+  if (!"negative" %in% names(doc_sent)) doc_sent$negative <- 0
+  doc_sent <- doc_sent |> mutate(sentiment = positive - negative)
+  
+  write.csv(doc_sent, doc_sent_file, row.names = FALSE)
+  
+  chunk_word_counts <- chunk_tokens |>
+    inner_join(bing, by = "word", relationship = "many-to-many") |>
+    count(word, sentiment, sort = FALSE)
+  
+  write.csv(chunk_word_counts, word_cnt_file, row.names = FALSE)
+  
+  rm(chunk_tokens, doc_sent, chunk_word_counts)
+  gc()
+}
+
+doc_sentiment <- map_dfr(
+  list.files(doc_sent_dir, full.names = TRUE),
+  read_csv,
+  col_types = cols(
+    file_name   = col_character(),
+    file_origin = col_character(),
+    positive    = col_double(),
+    negative    = col_double(),
+    sentiment   = col_double()
+  )
+)
+
+word_counts <- map_dfr(
+  list.files(word_cnt_dir, full.names = TRUE),
+  read_csv,
+  col_types = cols(
+    word      = col_character(),
+    sentiment = col_character(),
+    n         = col_double()
+  )
+) |>
+  group_by(word, sentiment) |>
+  summarise(n = sum(.data$n), .groups = "drop") |>
+  arrange(desc(n))
+
+saveRDS(doc_sentiment, file.path(output_dir, "doc_sentiment.rds"))
+saveRDS(word_counts, file.path(output_dir, "word_counts.rds"))
+```
+
+Most common positive and negative words
+
+```{r}
+sentiment <- word_counts |>
+  group_by(sentiment) |>
+  slice_max(n, n = 20) |>
+  ungroup() |>
+  mutate(word = reorder(word, n)) |>
+  ggplot(aes(n, word, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free_y") +
+  labs(x = "Contribution to sentiment", y = NULL,
+       title = "Most common sentiment-bearing words in the corpus")
+sentiment
+
+word_counts |> filter(sentiment == "negative") |> slice_max(n, n = 30) |> print(n = 30)
+word_counts |> filter(sentiment == "positive") |> slice_max(n, n = 30) |> print(n = 30)
+```
+
+```{r}
+ggsave(
+  filename = file.path("/Volumes/Thesis/plots/sentiment.png"),
+  plot = sentiment,
+  width = 8, height = 5, dpi = 300
+)
+```
+
+Sentiment distributions in datasets
+
+```{r}
+doc_sentiment_rds <- file.path(output_dir, "doc_sentiment.rds")
+
+if (file.exists(doc_sentiment_rds)) {
+  doc_sentiment <- readRDS(doc_sentiment_rds)
+} else {
+  doc_sentiment <- map_dfr(
+    list.files(doc_sent_dir, full.names = TRUE),
+    read_csv,
+    col_types = cols(
+      file_name   = col_character(),
+      file_origin = col_character(),
+      positive    = col_double(),
+      negative    = col_double(),
+      sentiment   = col_double()
+    )
+  )
+}
+
+chunk_size <- 200  # documents per chunk
+
+dataset_sentiment <- doc_sentiment |>
+  arrange(file_origin, file_name) |>
+  group_by(file_origin) |>
+  mutate(index = (row_number() - 1) %/% chunk_size) |>
+  group_by(file_origin, index) |>
+  summarise(
+    positive = sum(positive),
+    negative = sum(negative),
+    sentiment = positive - negative,
+    .groups = "drop"
+  )
+
+saveRDS(dataset_sentiment, file.path(output_dir, "dataset_sentiment.rds"))
+
+# split datasets by whether they have enough chunks to plot meaningfully
+chunk_counts <- dataset_sentiment |> count(file_origin, name = "n_chunks")
+
+plottable   <- chunk_counts |> filter(n_chunks >= 5) |> pull(file_origin)
+too_small   <- chunk_counts |> filter(n_chunks < 5) |> pull(file_origin)
+
+# trajectory plot — only datasets with enough chunks to show a real pattern
+sentiment_2 <- dataset_sentiment |>
+  filter(file_origin %in% plottable) |>
+  ggplot(aes(index, sentiment, fill = file_origin)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~file_origin, ncol = 2, scales = "free") +
+  labs(x = paste0("Chunk (", chunk_size, " documents each)"),
+       y = "Net sentiment (positive − negative)",
+       title = "Sentiment distribution across datasets")
+
+sentiment_2
+
+# simple summary for the too-small ones instead
+doc_sentiment |>
+  filter(file_origin %in% too_small) |>
+  group_by(file_origin) |>
+  summarise(total_sentiment = sum(sentiment), n_docs = n(), .groups = "drop")
+```
+
+```{r}
+ggsave(
+  filename = file.path("/Volumes/Thesis/plots/sentiment_2.png"),
+  plot = sentiment_2,
+  dpi = 300
+)
+```
+
+Comparing Lexicons across dataset 11
+
+```{r}
+chunk_size <- 200  # same as your dataset-level plot, for consistency
+
+# ============================================================================
+# Tokenize + lemmatize data-set-11-files once, reuse for all three lexicons
+# ============================================================================
+
+ds11_tokens <- data_e |>
+  filter(file_origin == "data-set-11-files") |>
+  select(all_of(c(ID_COL, "file_origin", TEXT_COL))) |>
+  arrange(!!sym(ID_COL)) |>
+  mutate(doc_index = (row_number() - 1) %/% chunk_size) |>  # assign chunk before unnesting
+  mutate(!!TEXT_COL := str_remove_all(!!sym(TEXT_COL), redaction_pattern)) |>
+  unnest_tokens(word, !!sym(TEXT_COL)) |>
+  mutate(word = lemmatize_words(word))
+
+# ============================================================================
+# AFINN — sum of values per chunk
+# ============================================================================
+
+afinn_ds11 <- ds11_tokens |>
+  inner_join(afinn, by = "word") |>
+  group_by(index = doc_index) |>
+  summarise(sentiment = sum(value), .groups = "drop") |>
+  mutate(method = "AFINN")
+
+# ============================================================================
+# Bing + NRC — positive/negative counts per chunk
+# ============================================================================
+
+bing_and_nrc_ds11 <- bind_rows(
+  ds11_tokens |>
+    inner_join(bing, by = "word", relationship = "many-to-many") |>
+    mutate(method = "Bing et al."),
+  ds11_tokens |>
+    inner_join(
+      nrc |> filter(sentiment %in% c("positive", "negative")),
+      by = "word", relationship = "many-to-many"
+    ) |>
+    mutate(method = "NRC")
+) |>
+  count(method, index = doc_index, sentiment) |>
+  pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) |>
+  mutate(sentiment = positive - negative)
+
+# ============================================================================
+# Combine and plot
+# ============================================================================
+
+bind_rows(afinn_ds11, bing_and_nrc_ds11) |>
+  ggplot(aes(index, sentiment, fill = method)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~method, ncol = 1, scales = "free_y") +
+  labs(
+    x = paste0("Chunk (", chunk_size, " documents each)"),
+    y = "Net sentiment",
+    title = "Lexicon comparison — data-set-11-files"
+  )
+```
+
+TF-IDF
+
+```{r}
+# ============================================================================
+# 1. Word counts per dataset, chunked (reusing your established pattern)
+# ============================================================================
+
+word_count_dir <- file.path(output_dir, "tfidf_word_counts_by_dataset")
+dir.create(word_count_dir, recursive = TRUE, showWarnings = FALSE)
+
+datasets <- unique(data_e$file_origin)
+if (length(datasets) == 0) stop("`datasets` is empty — check file_origin column.")
+
+for (i in seq_along(datasets)) {
+  ds <- datasets[i]
+  ds_safe <- str_replace_all(ds, "[^A-Za-z0-9_-]", "_")
+  out_file <- file.path(word_count_dir, paste0(ds_safe, ".csv"))
+  
+  if (file.exists(out_file)) { message(ds, " already done, skipping"); next }
+  message("Counting words: ", ds, " (", i, "/", length(datasets), ")")
+  
+  chunk_words <- data_e |>
+    filter(file_origin == ds) |>
+    select(all_of(c(ID_COL, "file_origin", TEXT_COL))) |>
+    mutate(!!TEXT_COL := str_remove_all(!!sym(TEXT_COL), redaction_pattern)) |>
+    unnest_tokens(word, !!sym(TEXT_COL)) |>
+    mutate(word = lemmatize_words(word)) |>
+    count(file_origin, word, sort = FALSE)
+  
+  write.csv(chunk_words, out_file, row.names = FALSE)
+  
+  rm(chunk_words)
+  gc()
+}
+
+# ============================================================================
+# 2. Combine into one dataframe (small — this is aggregated counts, not tokens)
+# ============================================================================
+
+dataset_words <- map_dfr(
+  list.files(word_count_dir, full.names = TRUE),
+  read_csv,
+  col_types = cols(file_origin = col_character(), word = col_character(), n = col_double())
+) |>
+  group_by(file_origin, word) |>
+  summarise(n = sum(.data$n), .groups = "drop")
+
+saveRDS(dataset_words, file.path(output_dir, "dataset_words.rds"))
+
+# ============================================================================
+# 3. bind_tf_idf — direct equivalent of book_tf_idf
+# ============================================================================
+
+dataset_tf_idf <- dataset_words |>
+  bind_tf_idf(word, file_origin, n)
+
+saveRDS(dataset_tf_idf, file.path(output_dir, "dataset_tf_idf.rds"))
+
+dataset_tf_idf |>
+  arrange(desc(tf_idf))
+
+# ============================================================================
+# 4. Plot — most distinctive words per dataset
+# ============================================================================
+
+dataset_tf_idf |>
+  group_by(file_origin) |>
+  slice_max(tf_idf, n = 10) |>
+  ungroup() |>
+  ggplot(aes(tf_idf, fct_reorder(word, tf_idf), fill = file_origin)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~file_origin, ncol = 2, scales = "free") +
+  labs(x = "tf-idf", y = NULL, title = "Most distinctive words per dataset")
+```
