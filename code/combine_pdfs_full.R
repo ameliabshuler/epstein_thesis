@@ -135,12 +135,84 @@ dataset_8_2 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-se
 ##############
 # dataset 9
 ##############
-dataset_9_1 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-1.csv", 
+dataset_9_1a <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-1_part_01.csv", 
                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
-dataset_9_2 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-2.csv", 
+dataset_9_1b <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-1_part_02.csv", 
                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
-dataset_9_3 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-3.csv", 
+dataset_9_1c <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-1_part_03.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_1d <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-1_part_04.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_1e <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-1_part_05.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_1f <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-1_part_06.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_1g <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-1_part_07.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_1h <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-1_part_08.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_1i <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-1_part_09.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_1j <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-1_part_10.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+
+dataset_9_1 <- combined <- dataset_9_1a |>
+  full_join(dataset_9_1b, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_1c, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_1d, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_1e, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_1f, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_1g, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_1h, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_1i, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_1j, by = c("file_name", "file_origin", "text"))
+
+dataset_9_2a <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-2_part_1.csv", 
                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_2b <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-2_part_2.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_2c <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-2_part_3.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_2d <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-2_part_4.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_2e <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-2_part_5.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_2f <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-2_part_6.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_2g <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-2_part_7.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_2h <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-2_part_8.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+
+dataset_9_2 <- combined <- dataset_9_2a |>
+  full_join(dataset_9_2b, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_2c, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_2d, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_2e, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_2f, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_2g, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_2h, by = c("file_name", "file_origin", "text"))
+
+dataset_9_3a <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-3_part_1.csv", 
+                        col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_3b <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-3_part_2.csv", 
+                        col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_3c <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-3_part_3.csv", 
+                        col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_3d <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-3_part_4.csv", 
+                        col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_3e <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-3_part_5.csv", 
+                        col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_3f <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-3_part_6.csv", 
+                        col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+
+dataset_9_3 <- combined <- dataset_9_3a |>
+  full_join(dataset_9_3b, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_3c, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_3d, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_3e, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_3f, by = c("file_name", "file_origin", "text"))
+
 dataset_9_4 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-4.csv", 
                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
 dataset_9_5 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-5.csv", 
@@ -175,8 +247,24 @@ dataset_9_19 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-s
                          col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
 dataset_9_20 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-20.csv", 
                          col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
-dataset_9_21 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-21.csv", 
+dataset_9_21a <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-21_part_1.csv", 
                          col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_21b <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-21_part_2.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_21c <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-21_part_3.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_21d <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-21_part_4.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_21e <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-21_part_5.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+
+dataset_9_21 <- combined <- dataset_9_21a |>
+  full_join(dataset_9_21b, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_21c, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_21d, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_21e, by = c("file_name", "file_origin", "text"))
+
+
 dataset_9_22 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-22.csv", 
                          col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
 dataset_9_23 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-23.csv", 
@@ -237,8 +325,29 @@ dataset_9_50 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-s
                          col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
 dataset_9_51 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-51.csv", 
                          col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
-dataset_9_52 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-52.csv", 
+dataset_9_52a <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-52_part_1.csv", 
                          col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_52b <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-52_part_2.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_52c <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-52_part_3.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_52d <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-52_part_4.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_52e <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-52_part_5.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_52f <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-52_part_6.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_9_52g <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-52_part_7.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+
+dataset_9_52 <- combined <- dataset_9_52a |>
+  full_join(dataset_9_52b, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_52c, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_52d, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_52e, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_52f, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_9_52g, by = c("file_name", "file_origin", "text"))
+
 dataset_9_53 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-53.csv", 
                          col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
 dataset_9_54 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-9-files-54.csv", 
@@ -249,12 +358,57 @@ dataset_9_54 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-s
 ##############
 dataset_10_1 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-1.csv", 
                          col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
-dataset_10_2 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-2.csv", 
+dataset_10_2a <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-2_part_1.csv", 
                          col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_10_2b <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-2_part_2.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_10_2c <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-2_part_3.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_10_2d <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-2_part_4.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_10_2e <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-2_part_5.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_10_2f <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-2_part_6.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_10_2g <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-2_part_7.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_10_2h <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-2_part_8.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+
+dataset_10_2 <- combined <- dataset_10_2a |>
+  full_join(dataset_10_2b, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_10_2c, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_10_2d, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_10_2e, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_10_2f, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_10_2g, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_10_2h, by = c("file_name", "file_origin", "text"))
+
 dataset_10_3 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-3.csv", 
                          col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
-dataset_10_4 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-4.csv", 
+dataset_10_4a <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-4_part_1.csv", 
                          col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_10_4b <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-4_part_2.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_10_4c <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-4_part_3.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_10_4d <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-4_part_4.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_10_4e <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-4_part_5.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_10_4f <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-4_part_6.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+dataset_10_4g <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-4_part_7.csv", 
+                         col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
+
+dataset_10_4 <- combined <- dataset_10_4a |>
+  full_join(dataset_10_4b, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_10_4c, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_10_4d, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_10_4e, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_10_4f, by = c("file_name", "file_origin", "text")) |>
+  full_join(dataset_10_4g, by = c("file_name", "file_origin", "text"))
+
 dataset_10_5 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-5.csv", 
                          col_types = list(file_name = col_character(), file_origin = col_character(), text = col_character()))
 dataset_10_6 <- read_csv("/Volumes/Thesis/Epstein_Files/output/extraction_data-set-10-files-6.csv", 

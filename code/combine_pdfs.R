@@ -281,8 +281,21 @@ dataset_10_16 <- read_csv("/Volumes/Thesis/Epstein_Files/output/doc_type_data-se
                        col_types = list(file_name = col_character(), file_origin = col_character(), file_type = col_character(), file_length = col_double()))
 dataset_10_17 <- read_csv("/Volumes/Thesis/Epstein_Files/output/doc_type_data-set-10-files-17.csv", 
                        col_types = list(file_name = col_character(), file_origin = col_character(), file_type = col_character(), file_length = col_double()))
-dataset_10_18 <- read_csv("/Volumes/Thesis/Epstein_Files/output/doc_type_data-set-10-files-18.csv", 
-                       col_types = list(file_name = col_character(), file_origin = col_character(), file_type = col_character(), file_length = col_double()))
+## due to Github size limits this is included
+dataset_10_18a <- read_csv("/Volumes/Thesis/Epstein_Files/output/doc_type_data-set-10-files-18_part_1.csv", 
+                           col_types = list(file_name = col_character(), file_origin = col_character(), file_type = col_character(), file_length = col_double()))
+dataset_10_18b <- read_csv("/Volumes/Thesis/Epstein_Files/output/doc_type_data-set-10-files-18_part_2.csv", 
+                          col_types = list(file_name = col_character(), file_origin = col_character(), file_type = col_character(), file_length = col_double()))
+dataset_10_18c <- read_csv("/Volumes/Thesis/Epstein_Files/output/doc_type_data-set-10-files-18_part_3.csv", 
+                          col_types = list(file_name = col_character(), file_origin = col_character(), file_type = col_character(), file_length = col_double()))
+dataset_10_18d <- read_csv("/Volumes/Thesis/Epstein_Files/output/doc_type_data-set-10-files-18_part_4.csv", 
+                           col_types = list(file_name = col_character(), file_origin = col_character(), file_type = col_character(), file_length = col_double()))
+
+dataset_10_18 <- dataset_10_18a |>
+  full_join(dataset_10_18b, by = c("file_name", "file_origin", "file_length", "file_type")) |>
+  full_join(dataset_10_18c, by = c("file_name", "file_origin", "file_length", "file_type")) |>
+  full_join(dataset_10_18d, by = c("file_name", "file_origin", "file_length", "file_type"))
+
 dataset_10_19 <- read_csv("/Volumes/Thesis/Epstein_Files/output/doc_type_data-set-10-files-19.csv", 
                        col_types = list(file_name = col_character(), file_origin = col_character(), file_type = col_character(), file_length = col_double()))
 dataset_10_20 <- read_csv("/Volumes/Thesis/Epstein_Files/output/doc_type_data-set-10-files-20.csv", 
