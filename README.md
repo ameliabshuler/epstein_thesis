@@ -6,7 +6,7 @@ While the Oversight Files can be downloaded directly from Google Drive or Dropbo
 
 They will download into folders named for their extraction source and automatically cap at 10,000 files.
 
-Estimated time to run: ~1-2 weeks continually
+Estimated time to run: ~2-4 weeks continually
 
 ## Classification Tibble and Email Tibble
 
@@ -26,7 +26,10 @@ Estimated time to run: ~15 hours
 
 Alternatively for higher quality extraction, extraction_tesseract.R can be run, however, with the tradeoff being time. To combine the .csv files either change line 45 in extraction_tesseract.R to extraction_ or change every line in combine_pdfs_full.R to extraction_tesseract_...
 
-Estimated time to run: ~2-3 weeks
+Estimated time to run: ~2-3 months
+
+## Combine Files
+Github has a max upload of 25 MB. If you don't want to run the above, you can use the existing files in output, but you will have to combine them to create the three data tables: exploratory, email, and extraction. **Make sure you unzip all files before running the files combine_pdfs.R (for exploratory and email) and combine_pdfs_full.R (for extraction).** The combine_pdfs.R will produce an email table that has the columns file_name, file_origin, and text. To divide into subject, to, from, etc, you will need to run cleanup.R on the email tibble.
 
 ## Exploratory Data Analysis (EDA)
 
